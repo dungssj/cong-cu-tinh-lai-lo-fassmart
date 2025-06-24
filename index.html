@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Kinh doanh Toàn diện: Lãi/Lỗ & Định giá</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .result-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            position: sticky;
+            top: 1.5rem;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.95rem;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        #final-result {
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+        .accordion-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .accordion-header {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 1.25rem;
+            text-align: left;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .accordion-header:hover {
+            background-color: #f9fafb;
+        }
+        .accordion-content {
+            padding: 0 1.25rem 1.25rem 1.25rem;
+            display: none;
+        }
+        .accordion-icon {
+            transition: transform 0.3s;
+        }
+        .accordion-item.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .accordion-item.open .accordion-content {
+            display: block;
+        }
+        .display-box {
+            background-color: #eef2ff;
+            color: #4338ca;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        .tab-button.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .formula-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .formula-list li:last-child {
+            border-bottom: none;
+        }
+        .formula-title {
+            font-weight: 600;
+            color: #111827;
+        }
+        .formula-expression {
+            color: #4b5563;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .formula-detail {
+            font-size: 0.85rem;
+            color: #6b7280;
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            border-left: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-8 relative">
+             <h1 class="text-4xl font-bold text-gray-800">Công cụ Kinh doanh Toàn diện</h1>
+             <p class="text-lg text-gray-500 mt-2">Phân tích chi tiết hiệu quả tài chính cho mỗi hợp đồng</p>
+             <button id="reset-button" class="absolute top-0 right-0 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                <i class="fa-solid fa-arrows-rotate mr-2"></i>Làm mới
+            </button>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex justify-center border-b border-gray-200 mb-8">
+            <button id="tab-profit-loss" class="tab-button active">
+                <i class="fa-solid fa-magnifying-glass-dollar mr-2"></i>Dự tính Lãi/Lỗ
+            </button>
+            <button id="tab-pricing" class="tab-button">
+                <i class="fa-solid fa-tag mr-2"></i>Định giá bán
+            </button>
+        </div>
+
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <!-- Cột nhập liệu -->
+            <div class="lg:col-span-3">
+                <form id="calculator-form">
+                    
+                    <!-- Mục nhập liệu chính - thay đổi theo Tab -->
+                    <div id="main-input-section" class="bg-white p-6 rounded-lg shadow-md mb-4">
+                        <!-- Chứa input Giá bán hoặc Lợi nhuận mong muốn -->
+                    </div>
+                    
+                    <!-- Accordion Item 1: Thông tin chung -->
+                    <div class="accordion-item open">
+                        <button type="button" class="accordion-header">
+                            <span><i class="fa-solid fa-file-invoice mr-3 text-indigo-500"></i>Thông tin chung</span>
+                            <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                <div class="input-group"><label class="input-label" for="tenKhachHang">Tên khách hàng</label><input type="text" id="tenKhachHang" class="input-field" placeholder="VD: Công ty A"></div>
+                                <div class="input-group"><label class="input-label" for="tenDuAn">Tên hàng hoá / Dự án</label><input type="text" id="tenDuAn" class="input-field" placeholder="VD: Lô hàng X"></div>
+                                <div class="input-group"><label class="input-label" for="soLuong">Số lượng</label><input type="text" id="soLuong" class="input-field number-input" value="1,000"></div>
+                                <div class="input-group"><label class="input-label" for="donViTinh">Đơn vị tính</label><input type="text" id="donViTinh" class="input-field" value="Cái"></div>
+                                <div class="input-group md:col-span-2"><label class="input-label" for="thoiGianThucHien">Thời gian thực hiện hợp đồng (ngày)</label><input type="text" id="thoiGianThucHien" class="input-field number-input" value="30"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 2: Doanh thu & Giảm trừ -->
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header">
+                            <span><i class="fa-solid fa-arrow-up-right-dots mr-3 text-green-500"></i>Doanh thu Phụ & Giảm trừ</span>
+                            <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2">Các khoản doanh thu (ngoài bán hàng)</h4>
+                                    <div class="input-group"><label class="input-label" for="phiVanChuyenThuKH">Phí vận chuyển thu từ KH</label><input type="text" id="phiVanChuyenThuKH" class="input-field number-input" value="2,000,000"></div>
+                                    <div class="input-group"><label class="input-label" for="thuKhac">Các khoản thu khác</label><input type="text" id="thuKhac" class="input-field number-input" value="0"></div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2">Các khoản giảm trừ</h4>
+                                    <div class="input-group"><label class="input-label" for="luongHangTraLai">Lượng hàng trả lại (đơn vị)</label><input type="text" id="luongHangTraLai" class="input-field number-input" value="10"></div>
+                                    <div class="input-group"><label class="input-label" for="haoHut">Hao hụt dự kiến (%)</label><input type="text" id="haoHut" class="input-field number-input" value="1"></div>
+                                    <div class="input-group"><label class="input-label" for="chietKhauThuongMai">Chiết khấu thương mại (%)</label><input type="text" id="chietKhauThuongMai" class="input-field number-input" value="2"></div>
+                                    <div class="input-group"><label class="input-label" for="chietKhauTrucTiep">Chiết khấu trực tiếp (tiền)</label><input type="text" id="chietKhauTrucTiep" class="input-field number-input" value="500,000"></div>
+                                </div>
+                           </div>
+                        </div>
+                    </div>
+
+                     <!-- Accordion Item 3: Chi phí -->
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header">
+                            <span><i class="fa-solid fa-wallet mr-3 text-red-500"></i>Chi phí hoạt động</span>
+                            <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-4">
+                                <div class="md:col-span-2">
+                                     <h4 class="font-semibold text-gray-600 mb-2">Chi phí Lương thưởng</h4>
+                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-indigo-50 p-4 rounded-lg">
+                                        <div class="input-group !mb-0"><label class="input-label" for="tongLuongThang">Tổng lương/tháng (Cty)</label><input type="text" id="tongLuongThang" class="input-field number-input" value="200,000,000"></div>
+                                        <div class="input-group !mb-0"><label class="input-label" for="phanBoLuong">% Phân bổ cho HĐ</label><input type="text" id="phanBoLuong" class="input-field number-input" value="10"></div>
+                                        <div class="input-group !mb-0"><label class="input-label">Chi phí lương cho HĐ</label><div id="cpLuongHienThi" class="display-box h-[46px] flex items-center justify-center">...</div></div>
+                                     </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2 mt-4">Giá vốn</h4>
+                                    <div class="input-group"><label class="input-label" for="giaMua">Giá mua / đơn vị (chưa VAT)</label><input type="text" id="giaMua" class="input-field number-input" value="100,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpThuMua">Chi phí thu mua (phân bổ)</label><input type="text" id="cpThuMua" class="input-field number-input" value="1,000,000"></div>
+                                </div>
+                                 <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2 mt-4">Chi phí khác</h4>
+                                    <div class="input-group"><label class="input-label" for="cpHangMau">Chi phí hàng mẫu</label><input type="text" id="cpHangMau" class="input-field number-input" value="500,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpDongGoi">Chi phí đóng gói</label><input type="text" id="cpDongGoi" class="input-field number-input" value="1,500,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpVanChuyen">Chi phí vận chuyển</label><input type="text" id="cpVanChuyen" class="input-field number-input" value="2,500,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpThanhToan">Chi phí thanh toán</label><input type="text" id="cpThanhToan" class="input-field number-input" value="300,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpKiemSoatCL">Chi phí kiểm soát chất lượng</label><input type="text" id="cpKiemSoatCL" class="input-field number-input" value="700,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpXuatNhapKhau">Chi phí xuất nhập khẩu</label><input type="text" id="cpXuatNhapKhau" class="input-field number-input" value="0"></div>
+                                    <div class="input-group"><label class="input-label" for="cpHoaHong">Chi phí hoa hồng</label><input type="text" id="cpHoaHong" class="input-field number-input" value="1,000,000"></div>
+                                    <div class="input-group"><label class="input-label" for="cpKhac">Chi phí khác</label><input type="text" id="cpKhac" class="input-field number-input" value="500,000"></div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Accordion Item 4: Tài chính & Thuế -->
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header">
+                            <span><i class="fa-solid fa-landmark mr-3 text-amber-500"></i>Tài chính & Thuế</span>
+                             <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pt-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2">Chi phí vốn vay</h4>
+                                    <div class="input-group"><label class="input-label" for="vonVay">Vốn vay</label><input type="text" id="vonVay" class="input-field number-input" value="50,000,000"></div>
+                                    <div class="input-group"><label class="input-label" for="laiSuat">Lãi suất (%/năm)</label><input type="text" id="laiSuat" class="input-field number-input" value="10"></div>
+                                    <div class="input-group"><label class="input-label" for="thoiGianVay">Thời gian vay (tháng)</label><input type="text" id="thoiGianVay" class="input-field number-input" value="3"></div>
+                                </div>
+                                 <div>
+                                    <h4 class="font-semibold text-gray-600 mb-2">Thuế suất</h4>
+                                    <div class="input-group"><label class="input-label" for="vatMua">VAT hàng mua (%)</label><input type="text" id="vatMua" class="input-field number-input" value="10"></div>
+                                    <div class="input-group"><label class="input-label" for="vatBan">VAT hàng bán (%)</label><input type="text" id="vatBan" class="input-field number-input" value="8"></div>
+                                    <div class="input-group"><label class="input-label" for="thueTNDN">Thuế TNDN (%)</label><input type="text" id="thueTNDN" class="input-field number-input" value="20"></div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 5: Ghi chú Công thức -->
+                    <div class="accordion-item">
+                        <button type="button" class="accordion-header">
+                            <span><i class="fa-solid fa-calculator mr-3 text-gray-500"></i>Ghi chú Công thức chi tiết</span>
+                             <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <ul class="formula-list pt-4 space-y-4">
+                                <li id="formula-pricing" style="display: none;">
+                                    <p class="formula-title">Giá bán đề xuất/Đơn vị (để đạt LN mong muốn)</p>
+                                    <p class="formula-expression">= (Doanh thu thuần cần có - Doanh thu phụ) / Hệ số doanh thu từ hàng bán</p>
+                                    <div class="formula-detail">
+                                        <p><b>1. Doanh thu thuần cần có</b> = Tổng Chi phí / (1 - Tỷ suất LN mong muốn %)</p>
+                                        <p class="mt-1"><b>2. Doanh thu phụ</b> = Phí VC thu KH + Thu khác - Chiết khấu trực tiếp</p>
+                                        <p class="mt-1"><b>3. Hệ số doanh thu từ hàng bán</b> = Số lượng × (1 - % hàng trả lại) × (1 - % hao hụt) × (1 - % CK thương mại)</p>
+                                        <p class="mt-2">Đây là công thức phức tạp nhất, dùng để tìm ra giá bán tối thiểu bạn cần đặt để đạt được mục tiêu lợi nhuận sau khi đã trừ đi tất cả chi phí và các khoản giảm trừ.</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <p class="formula-title">Doanh thu thuần</p>
+                                    <p class="formula-expression">= Tổng Doanh thu gộp - Tổng các khoản giảm trừ</p>
+                                    <div class="formula-detail">
+                                        <p><b>Tổng DT gộp</b> = (Giá bán × Số lượng) + Phí VC thu KH + Thu khác.</p>
+                                        <p class="mt-1"><b>Tổng giảm trừ</b> = Giá trị hàng trả lại + Giá trị hao hụt + Giá trị CK thương mại + Chiết khấu trực tiếp.</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <p class="formula-title">Chi phí lương cho HĐ</p>
+                                    <p class="formula-expression">= (Tổng lương/tháng ÷ 30) × Thời gian thực hiện HĐ × % Phân bổ</p>
+                                </li>
+                                <li>
+                                    <p class="formula-title">Tổng chi phí</p>
+                                    <p class="formula-expression">= Giá vốn hàng bán + Chi phí hoạt động + Chi phí vốn (lãi vay)</p>
+                                    <div class="formula-detail">
+                                        <p><b>Giá vốn hàng bán</b> = (Giá mua × Số lượng) + Chi phí thu mua.</p>
+                                        <p class="mt-1"><b>Chi phí hoạt động</b> = CP lương HĐ + CP hàng mẫu + ... + CP khác.</p>
+                                        <p class="mt-1"><b>Chi phí vốn</b> = Vốn vay × (Lãi suất/năm ÷ 12) × Số tháng vay.</p>
+                                    </div>
+                                </li>
+                                 <li>
+                                    <p class="formula-title">Lợi nhuận trước thuế</p>
+                                    <p class="formula-expression">= Doanh thu thuần - Tổng chi phí</p>
+                                </li>
+                                <li>
+                                    <p class="formula-title">Lợi nhuận ròng (Lãi/Lỗ)</p>
+                                    <p class="formula-expression">= Lợi nhuận trước thuế - Thuế TNDN</p>
+                                </li>
+                                <li>
+                                    <p class="formula-title">Tỷ suất Lợi nhuận Trước thuế</p>
+                                    <p class="formula-expression">= (Lợi nhuận trước thuế ÷ Doanh thu thuần) × 100%</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Cột kết quả -->
+            <div class="lg:col-span-2">
+                <div class="result-card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">Bảng phân tích Tài chính</h2>
+                    <div id="result-header" class="text-center mb-4 border-b pb-4">
+                        <p id="res-tenDuAn" class="font-semibold text-indigo-600 text-lg">Tên Hàng hoá / Dự án</p>
+                        <p class="text-sm text-gray-500">cho <span id="res-tenKhachHang" class="font-medium">Tên Khách hàng</span></p>
+                    </div>
+
+                    <div id="final-result-container">
+                        <!-- Chứa kết quả chính: Lãi/Lỗ hoặc Giá bán đề xuất -->
+                    </div>
+                    
+                    <!-- KPI Card -->
+                    <div id="kpi-section" class="mb-4">
+                        <div id="profit-margin-check" class="flex justify-between items-center p-3 rounded-lg">
+                            <span class="font-semibold text-sm">Tỷ suất LN Trước thuế</span>
+                            <span id="res-tySuatLoiNhuan" class="font-bold text-lg"></span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="result-item pt-0">
+                            <span class="result-label font-medium text-blue-600">Doanh thu thuần</span>
+                            <span id="res-doanhThuThuan" class="result-value text-blue-600 font-bold"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label font-medium text-red-600">Tổng chi phí</span>
+                            <span id="res-tongChiPhi" class="result-value text-red-600 font-bold"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label pl-4">Giá vốn hàng bán</span>
+                            <span id="res-giaVon" class="result-value"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label pl-4">Chi phí hoạt động</span>
+                            <span id="res-chiPhiHoatDong" class="result-value"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label pl-4">Chi phí vốn (lãi vay)</span>
+                            <span id="res-chiPhiVon" class="result-value"></span>
+                        </div>
+                         <div class="result-item font-bold border-t-2 border-gray-400">
+                            <span class="result-label text-gray-800">Lợi nhuận trước thuế</span>
+                            <span id="res-loiNhuanTruocThue" class="result-value text-gray-800"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label text-red-500">(-) Thuế TNDN phải nộp</span>
+                            <span id="res-thueTNDN" class="result-value text-red-500"></span>
+                        </div>
+                        <div class="result-item border-t-2 border-gray-400">
+                            <span class="result-label font-medium text-purple-600">VAT phải nộp (đã khấu trừ)</span>
+                            <span id="res-vatPhaiNop" class="result-value text-purple-600"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let currentMode = 'profit-loss'; // 'profit-loss' hoặc 'pricing'
+            const mainInputSection = document.getElementById('main-input-section');
+            const finalResultContainer = document.getElementById('final-result-container');
+            const formulaPricingLi = document.getElementById('formula-pricing');
+
+            // Templates for dynamic sections
+            const profitLossInputTemplate = `
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Mục tiêu chính: Tính Lãi/Lỗ</h3>
+                <div class="input-group">
+                    <label class="input-label" for="giaBan">Giá bán / đơn vị (chưa VAT)</label>
+                    <input type="text" id="giaBan" class="input-field number-input" value="150,000">
+                </div>
+            `;
+            const pricingInputTemplate = `
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Mục tiêu chính: Định giá bán</h3>
+                <div class="input-group">
+                    <label class="input-label" for="loiNhuanMongMuon">Tỷ suất Lợi nhuận Trước thuế Mong muốn (%)</label>
+                    <input type="text" id="loiNhuanMongMuon" class="input-field number-input" value="15">
+                </div>
+            `;
+            const profitLossResultTemplate = `
+                <div id="final-result" class="bg-green-100 text-green-800"></div>
+            `;
+            const pricingResultTemplate = `
+                <div id="final-result" class="bg-indigo-100 text-indigo-800"></div>
+            `;
+
+
+            function setupUIForMode(mode) {
+                currentMode = mode;
+                const tabProfitLoss = document.getElementById('tab-profit-loss');
+                const tabPricing = document.getElementById('tab-pricing');
+
+                if (mode === 'profit-loss') {
+                    mainInputSection.innerHTML = profitLossInputTemplate;
+                    finalResultContainer.innerHTML = profitLossResultTemplate;
+                    tabProfitLoss.classList.add('active');
+                    tabPricing.classList.remove('active');
+                    formulaPricingLi.style.display = 'none';
+                } else {
+                    mainInputSection.innerHTML = pricingInputTemplate;
+                    finalResultContainer.innerHTML = pricingResultTemplate;
+                    tabPricing.classList.add('active');
+                    tabProfitLoss.classList.remove('active');
+                    formulaPricingLi.style.display = 'block';
+                }
+                
+                addEventListenersToInputs();
+                calculate();
+            }
+            
+            const formatNumber = (n) => {
+                const num = Number(n);
+                if (isNaN(num)) return '0';
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            };
+
+            const parseNumber = (s) => {
+                return parseFloat(String(s).replace(/,/g, '')) || 0;
+            };
+            
+            function addEventListenersToInputs() {
+                const allInputs = document.querySelectorAll('.input-field');
+                allInputs.forEach(input => {
+                    if(input.dataset.listenerAttached) return;
+                    input.addEventListener('input', (e) => {
+                         if (input.classList.contains('number-input')) {
+                            const cursorPosition = e.target.selectionStart;
+                            const originalLength = e.target.value.length;
+                            const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+                            const formattedValue = formatNumber(rawValue);
+                            if (e.target.value !== formattedValue) {
+                              e.target.value = formattedValue;
+                              const newLength = e.target.value.length;
+                              const newCursorPosition = cursorPosition + (newLength - originalLength);
+                              e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+                            }
+                        }
+                        calculate();
+                    });
+                     input.dataset.listenerAttached = 'true';
+                });
+            }
+
+            const getValue = (id) => {
+                const input = document.getElementById(id);
+                return input ? parseNumber(input.value) : 0;
+            };
+
+            const getTextValue = (id) => {
+                 const input = document.getElementById(id);
+                 return input ? input.value.trim() : '';
+            }
+            
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                header.addEventListener('click', () => {
+                    item.classList.toggle('open');
+                });
+            });
+
+            const calculate = () => {
+                const soLuong = getValue('soLuong');
+                const phiVanChuyenThuKH = getValue('phiVanChuyenThuKH');
+                const thuKhac = getValue('thuKhac');
+                const luongHangTraLai = getValue('luongHangTraLai');
+                const haoHutPercent = getValue('haoHut') / 100;
+                const chietKhauTMPercent = getValue('chietKhauThuongMai') / 100;
+                const chietKhauTrucTiep = getValue('chietKhauTrucTiep');
+                const giaMua = getValue('giaMua');
+                const cpThuMua = getValue('cpThuMua');
+                const cpHangMau = getValue('cpHangMau');
+                const cpDongGoi = getValue('cpDongGoi');
+                const cpVanChuyen = getValue('cpVanChuyen');
+                const cpThanhToan = getValue('cpThanhToan');
+                const cpKiemSoatCL = getValue('cpKiemSoatCL');
+                const cpXuatNhapKhau = getValue('cpXuatNhapKhau');
+                const cpHoaHong = getValue('cpHoaHong');
+                const cpKhac = getValue('cpKhac');
+                const tongLuongThang = getValue('tongLuongThang');
+                const phanBoLuongPercent = getValue('phanBoLuong') / 100;
+                const thoiGianThucHien = getValue('thoiGianThucHien');
+                const vonVay = getValue('vonVay');
+                const laiSuatNam = getValue('laiSuat') / 100;
+                const thoiGianVayThang = getValue('thoiGianVay');
+                const vatMuaPercent = getValue('vatMua') / 100;
+                const vatBanPercent = getValue('vatBan') / 100;
+                const thueTNDNPercent = getValue('thueTNDN') / 100;
+
+                const cpLuongThuong = (tongLuongThang / 30) * thoiGianThucHien * phanBoLuongPercent;
+                document.getElementById('cpLuongHienThi').textContent = formatNumber(Math.round(cpLuongThuong));
+                const giaVonFixed = giaMua * soLuong + cpThuMua;
+                const chiPhiHoatDongFixed = cpHangMau + cpDongGoi + cpVanChuyen + cpThanhToan + cpKiemSoatCL + cpXuatNhapKhau + cpHoaHong + cpLuongThuong + cpKhac;
+                const chiPhiVon = vonVay * (laiSuatNam / 12) * thoiGianVayThang;
+                const totalFixedCosts = giaVonFixed + chiPhiHoatDongFixed + chiPhiVon;
+                
+                let giaBan = 0;
+                if (currentMode === 'profit-loss') {
+                    giaBan = getValue('giaBan');
+                } else {
+                    const loiNhuanMongMuonPercent = getValue('loiNhuanMongMuon') / 100;
+                    if (1 - loiNhuanMongMuonPercent <= 0) {
+                        giaBan = Infinity;
+                    } else {
+                        const netRevenueRequired = totalFixedCosts / (1 - loiNhuanMongMuonPercent);
+                        const otherRevenues = phiVanChuyenThuKH + thuKhac;
+                        const fixedReductions = chietKhauTrucTiep;
+                        const f_traLai = soLuong > 0 ? luongHangTraLai / soLuong : 0;
+                        const multiplier = (1 - f_traLai) * (1 - haoHutPercent) * (1 - chietKhauTMPercent);
+                        const A = soLuong * multiplier;
+                        const B = otherRevenues - fixedReductions;
+                        
+                        if (A > 0) {
+                            giaBan = (netRevenueRequired - B) / A;
+                        } else {
+                            giaBan = Infinity;
+                        }
+                    }
+                }
+                
+                const doanhThuBanHang = giaBan * soLuong;
+                const doanhThuKhac = phiVanChuyenThuKH + thuKhac;
+                const tongDoanhThuGop = doanhThuBanHang + doanhThuKhac;
+
+                const giaTriHangTraLai = giaBan * luongHangTraLai;
+                const giaTriHaoHut = (doanhThuBanHang - giaTriHangTraLai) * haoHutPercent;
+                const giaTriSauTraLaiHaoHut = doanhThuBanHang - giaTriHangTraLai - giaTriHaoHut;
+                const giaTriChietKhauTM = giaTriSauTraLaiHaoHut * chietKhauTMPercent;
+                const tongGiamTru = giaTriHangTraLai + giaTriHaoHut + giaTriChietKhauTM + chietKhauTrucTiep;
+                const doanhThuThuan = tongDoanhThuGop - tongGiamTru;
+                
+                const tongChiPhi = totalFixedCosts;
+                const loiNhuanTruocThue = doanhThuThuan - tongChiPhi;
+                const thueTNDNPhaiNop = loiNhuanTruocThue > 0 ? loiNhuanTruocThue * thueTNDNPercent : 0;
+                const loiNhuanRong = loiNhuanTruocThue - thueTNDNPhaiNop;
+                
+                const doanhThuTinhVAT = doanhThuBanHang + phiVanChuyenThuKH + thuKhac;
+                const vatDauRa = (doanhThuTinhVAT - giaTriHangTraLai) * vatBanPercent;
+                const chiPhiTinhVAT = (giaMua * soLuong) + cpThuMua + cpHangMau + cpDongGoi + cpVanChuyen + cpThanhToan + cpKiemSoatCL + cpXuatNhapKhau + cpHoaHong + cpKhac;
+                const vatDauVao = chiPhiTinhVAT * vatMuaPercent;
+                const vatPhaiNop = vatDauRa - vatDauVao;
+
+                document.getElementById('res-tenKhachHang').textContent = getTextValue('tenKhachHang') || '...';
+                document.getElementById('res-tenDuAn').textContent = getTextValue('tenDuAn') || '...';
+                const currency = ' đ';
+                document.getElementById('res-doanhThuThuan').textContent = formatNumber(Math.round(doanhThuThuan)) + currency;
+                document.getElementById('res-tongChiPhi').textContent = formatNumber(Math.round(tongChiPhi)) + currency;
+                document.getElementById('res-giaVon').textContent = formatNumber(Math.round(giaVonFixed)) + currency;
+                document.getElementById('res-chiPhiHoatDong').textContent = formatNumber(Math.round(chiPhiHoatDongFixed)) + currency;
+                document.getElementById('res-chiPhiVon').textContent = formatNumber(Math.round(chiPhiVon)) + currency;
+                document.getElementById('res-loiNhuanTruocThue').textContent = formatNumber(Math.round(loiNhuanTruocThue)) + currency;
+                document.getElementById('res-thueTNDN').textContent = `- ${formatNumber(Math.round(thueTNDNPhaiNop))}` + currency;
+                document.getElementById('res-vatPhaiNop').textContent = formatNumber(Math.round(vatPhaiNop)) + currency;
+
+                const finalResultEl = document.getElementById('final-result');
+                if (currentMode === 'profit-loss') {
+                    if (loiNhuanRong >= 0) {
+                        finalResultEl.innerHTML = `<span>LÃI RÒNG DỰ KIẾN</span><span class="block">${formatNumber(Math.round(loiNhuanRong))} ${currency}</span>`;
+                        finalResultEl.className = 'bg-green-100 text-green-800';
+                    } else {
+                        finalResultEl.innerHTML = `<span>LỖ DỰ KIẾN</span><span class="block">${formatNumber(Math.round(Math.abs(loiNhuanRong)))} ${currency}</span>`;
+                        finalResultEl.className = 'bg-red-100 text-red-800';
+                    }
+                } else {
+                    finalResultEl.innerHTML = `<span>GIÁ BÁN ĐỀ XUẤT/ĐV</span><span class="block">${isFinite(giaBan) ? formatNumber(Math.round(giaBan)) : 'Không thể tính'} ${isFinite(giaBan) ? currency : ''}</span>`;
+                     finalResultEl.className = 'bg-indigo-100 text-indigo-800';
+                }
+                finalResultEl.classList.add('p-5', 'rounded-lg', 'text-center', 'text-xl', 'font-bold', 'mb-4');
+                
+                const tySuatLoiNhuan = doanhThuThuan > 0 ? (loiNhuanTruocThue / doanhThuThuan) * 100 : (loiNhuanTruocThue === 0 ? 0 : -Infinity);
+                const profitMarginCheckEl = document.getElementById('profit-margin-check');
+                const profitMarginValueEl = document.getElementById('res-tySuatLoiNhuan');
+                profitMarginValueEl.textContent = `${isFinite(tySuatLoiNhuan) ? tySuatLoiNhuan.toFixed(2) : 'N/A'}%`;
+                
+                const targetMargin = currentMode === 'pricing' ? getValue('loiNhuanMongMuon') : 0;
+                const isMeetingTarget = tySuatLoiNhuan >= (targetMargin - 0.001); // Small tolerance for floating point
+                if (isMeetingTarget) {
+                    profitMarginCheckEl.className = 'flex justify-between items-center p-3 rounded-lg bg-green-50 text-green-800';
+                    profitMarginValueEl.innerHTML += ' <i class="fa-solid fa-circle-check ml-2"></i>';
+                } else {
+                    profitMarginCheckEl.className = 'flex justify-between items-center p-3 rounded-lg bg-red-50 text-red-800';
+                    profitMarginValueEl.innerHTML += ' <i class="fa-solid fa-circle-xmark ml-2"></i>';
+                }
+            };
+
+            document.getElementById('tab-profit-loss').addEventListener('click', () => setupUIForMode('profit-loss'));
+            document.getElementById('tab-pricing').addEventListener('click', () => setupUIForMode('pricing'));
+
+            document.getElementById('reset-button').addEventListener('click', () => {
+                const allInputs = document.querySelectorAll('#calculator-form .input-field');
+                allInputs.forEach(input => {
+                    if (input.classList.contains('number-input')) {
+                        input.value = '0';
+                    } else {
+                        input.value = '';
+                    }
+                });
+                calculate();
+            });
+            
+            setupUIForMode('profit-loss');
+        });
+    </script>
+</body>
+</html>
